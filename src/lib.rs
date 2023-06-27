@@ -60,11 +60,13 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
-pub use egui;
+pub use egui_glfw_gl::egui as eglfw;
 #[allow(deprecated)]
 pub use style::*;
 pub use tree::*;
 pub use widgets::*;
+
+pub use style::Style;
 
 /// egui_dock theme (color, sizes...).
 pub mod style;

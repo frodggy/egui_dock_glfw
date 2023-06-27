@@ -1,5 +1,5 @@
 use crate::{NodeIndex, Split, TabDestination, TabIndex};
-use egui::{Pos2, Rect};
+use egui_glfw_gl::egui::{Pos2, Rect};
 
 #[derive(Debug)]
 pub(super) struct HoverData {

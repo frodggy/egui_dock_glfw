@@ -1,6 +1,6 @@
 use crate::{NodeIndex, TabStyle};
-use egui::{Id, Ui, WidgetText};
-
+use egui_glfw_gl::egui as eglfw;
+use egui_glfw_gl::egui::{Id, Ui, WidgetText};
 /// Defines how to display a tab inside a [`Tree`](crate::Tree).
 pub trait TabViewer {
     /// The type of tab in which you can store state to be drawn in your tabs.
@@ -23,7 +23,7 @@ pub trait TabViewer {
     }
 
     /// Called after each tab button is shown, so you can add a tooltip, check for clicks, etc.
-    fn on_tab_button(&mut self, _tab: &mut Self::Tab, _response: &egui::Response) {}
+    fn on_tab_button(&mut self, _tab: &mut Self::Tab, _response: &eglfw::Response) {}
 
     /// This is called when the tabs close button is pressed.
     ///

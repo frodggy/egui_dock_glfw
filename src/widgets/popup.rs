@@ -1,9 +1,11 @@
-use egui::{containers::*, emath::*, Align, Id, Key, Layout, Order, Response, Ui};
+use egui_glfw_gl::egui as eglfw;
+use egui_glfw_gl::egui::{containers::*, emath::*, Align, Id, Key, Layout, Order, Response, Ui};
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug, Default)]
 struct State {
     size: Vec2,
 }
+
 
 // This code was taken from the example here: https://github.com/emilk/egui/pull/1653#issuecomment-1133671051.
 // It's needed because `egui`'s `popup_below_widget` currently doesn't respect window edges and will fall outside
@@ -18,11 +20,11 @@ pub(crate) fn popup_under_widget<R>(
     widget_response: &Response,
     add_contents: impl FnOnce(&mut Ui) -> R,
 ) -> Option<R> {
-    if !ui.memory(|mem| mem.is_popup_open(popup_id)) {
+    if !ui.memory().is_popup_open(popup_id) {
         return None;
     }
 
-    let state: Option<State> = ui.data_mut(|d| d.get_temp(popup_id));
+    let state: Option<State> = ui.data().get_temp(popup_id);
 
     // If this is the first draw, we don't know the popup size yet, so we don't know how to
     // position the popup
@@ -30,7 +32,10 @@ pub(crate) fn popup_under_widget<R>(
         ui.ctx().request_repaint();
     }
 
-    let mut state = state.unwrap_or_default();
+    let mut state = match state {
+        Some(s) => s,
+        None => State::default(),
+    };
 
     let rect = Rect {
         min: widget_response.rect.left_bottom(),
@@ -61,17 +66,17 @@ pub(crate) fn popup_under_widget<R>(
         })
         .inner;
 
-    ui.data_mut(|d| *d.get_temp_mut_or_default(popup_id) = state);
+    *ui.data().get_temp_mut_or_default(popup_id) = state.clone();
 
-    if ui.input(|i| i.key_pressed(Key::Escape)) || widget_response.clicked_elsewhere() {
-        ui.memory_mut(|mem| mem.close_popup());
+    if ui.input().key_pressed(Key::Escape) || widget_response.clicked_elsewhere() {
+        ui.memory().close_popup();
     }
     Some(inner)
 }
 
 /// Copied egui because it is a private function on `egui::Context`
 pub(crate) fn constrain_window_rect_to_area(
-    ctx: &egui::Context,
+    ctx: &eglfw::Context,
     window: Rect,
     area: Option<Rect>,
 ) -> Rect {
@@ -80,13 +85,13 @@ pub(crate) fn constrain_window_rect_to_area(
     if window.width() > area.width() {
         // Allow overlapping side bars.
         // This is important for small screens, e.g. mobiles running the web demo.
-        area.max.x = ctx.input(|i| i.screen_rect()).max.x;
-        area.min.x = ctx.input(|i| i.screen_rect()).min.x;
+        area.max.x = ctx.input().screen_rect().max.x;
+        area.min.x = ctx.input().screen_rect().min.x;
     }
     if window.height() > area.height() {
         // Allow overlapping top/bottom bars:
-        area.max.y = ctx.input(|i| i.screen_rect()).max.y;
-        area.min.y = ctx.input(|i| i.screen_rect()).min.y;
+        area.max.y = ctx.input().screen_rect().max.y;
+        area.min.y = ctx.input().screen_rect().min.y;
     }
 
     let mut pos = window.min;

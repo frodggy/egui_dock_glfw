@@ -25,7 +25,7 @@ pub use node_index::NodeIndex;
 pub use tab_index::TabIndex;
 pub use tab_iter::TabIter;
 
-use egui::Rect;
+use egui_glfw_gl::egui::Rect;
 use std::fmt;
 
 // ----------------------------------------------------------------------------

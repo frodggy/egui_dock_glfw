@@ -1,5 +1,5 @@
 ﻿use crate::{Split, TabIndex};
-use egui::Rect;
+use egui_glfw_gl::egui::Rect;
 
 /// Represents an abstract node of a [`Tree`](crate::Tree).
 #[derive(Clone, Debug)]

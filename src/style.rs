@@ -1,5 +1,6 @@
-use egui::{ecolor::*, Margin, Rounding, Stroke};
-
+use eglfw::style::Margin;
+use eglfw::{Rounding, Stroke, *};
+use egui_glfw_gl::egui as eglfw;
 /// Left or right alignment for tab add button.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -223,7 +224,7 @@ impl Style {
     ///
     /// See also: [`ButtonsStyle::from_egui`], [`SeparatorStyle::from_egui`], [`TabBarStyle::from_egui`],
     /// [`TabStyle::from_egui`]
-    pub fn from_egui(style: &egui::Style) -> Self {
+    pub fn from_egui(style: &eglfw::Style) -> Self {
         Self {
             border: Stroke {
                 color: style.visuals.widgets.active.bg_fill,
@@ -249,7 +250,7 @@ impl ButtonsStyle {
     /// - [`ButtonsStyle::add_tab_bg_fill`]
     /// - [`ButtonsStyle::add_tab_color`]
     /// - [`ButtonsStyle::add_tab_active_color`]
-    pub fn from_egui(style: &egui::Style) -> Self {
+    pub fn from_egui(style: &eglfw::Style) -> Self {
         Self {
             close_tab_bg_fill: style.visuals.widgets.active.bg_fill,
             close_tab_color: style.visuals.text_color(),
@@ -270,7 +271,7 @@ impl SeparatorStyle {
     /// - [`SeparatorStyle::color_idle`]
     /// - [`SeparatorStyle::color_hovered`]
     /// - [`SeparatorStyle::color_dragged`]
-    pub fn from_egui(style: &egui::Style) -> Self {
+    pub fn from_egui(style: &eglfw::Style) -> Self {
         Self {
             // Same as egui panel resize colors:
             color_idle: style.visuals.widgets.noninteractive.bg_stroke.color, // dim
@@ -287,7 +288,7 @@ impl TabBarStyle {
     /// Fields overwritten by [`egui::Style`] are:
     /// - [`TabBarStyle::bg_fill`]
     /// - [`TabBarStyle::hline_color`]
-    pub fn from_egui(style: &egui::Style) -> Self {
+    pub fn from_egui(style: &eglfw::Style) -> Self {
         Self {
             bg_fill: (Rgba::from(style.visuals.window_fill()) * Rgba::from_gray(0.7)).into(),
             hline_color: style.visuals.widgets.active.bg_fill,
@@ -306,7 +307,7 @@ impl TabStyle {
     /// - [`TabStyle::text_color_focused`]
     /// - [`TabStyle::text_color_active_unfocused`]
     /// - [`TabStyle::text_color_active_focused`]
-    pub fn from_egui(style: &egui::Style) -> Self {
+    pub fn from_egui(style: &eglfw::Style) -> Self {
         Self {
             outline_color: style.visuals.widgets.active.bg_fill,
             bg_fill: style.visuals.window_fill(),

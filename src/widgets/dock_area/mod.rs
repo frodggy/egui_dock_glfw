@@ -4,13 +4,18 @@ mod state;
 use crate::{
     utils::{expand_to_pixel, map_to_pixel, rect_set_size_centered},
     widgets::popup::popup_under_widget,
-    Node, NodeIndex, Style, TabAddAlign, TabIndex, TabStyle, TabViewer, Tree,
+    Node, NodeIndex, style::Style, TabAddAlign, TabIndex, TabStyle, TabViewer, Tree,
 };
 
 use duplicate::duplicate;
-use egui::{
-    containers::*, emath::*, epaint::*, layers::*, Context, CursorIcon, Id, Layout, Response,
-    Sense, TextStyle, Ui, WidgetText,
+use eglfw::{
+    Align2, CentralPanel, Color32, Context, CursorIcon, Frame, Id, LayerId, Layout, Rect,
+    Response, Sense, TextStyle, Ui, WidgetText,
+};
+// use egui::{containers::*, emath::*, epaint::*, layers::*, Context};
+use egui_glfw_gl::egui::{
+    self as eglfw, epaint::TextShape, lerp, pos2, vec2, Align, NumExt, Order, Rounding, ScrollArea,
+    Stroke, Vec2,
 };
 use hover_data::HoverData;
 use paste::paste;
@@ -155,7 +160,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
     pub fn show(self, ctx: &Context, tab_viewer: &mut impl TabViewer<Tab = Tab>) {
         CentralPanel::default()
             .frame(
-                Frame::central_panel(&ctx.style())
+                Frame::window(&ctx.style())
                     .inner_margin(0.)
                     .fill(Color32::TRANSPARENT),
             )
@@ -217,7 +222,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
                 let layer_id = LayerId::new(Order::Foreground, id);
                 let painter = ui.ctx().layer_painter(layer_id);
                 painter.rect_filled(overlay, 0.0, style.selection_color);
-                if ui.input(|i| i.pointer.any_released()) {
+                if ui.input().pointer.any_released() {
                     self.tree.move_tab((src, tab_index), (dst, tab_dst));
                 }
             }
@@ -305,7 +310,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
                 let interact_rect = separator.expand2(expand);
 
                 let response = ui.allocate_rect(interact_rect, Sense::click_and_drag())
-                    .on_hover_and_drag_cursor(paste!{ CursorIcon::[<Resize orientation>]});
+                    .on_hover_cursor(paste!{ CursorIcon::[<Resize orientation>]});
 
                 let midpoint = rect.min.dim_point + rect.dim_size() * *fraction;
                 separator.min.dim_point = map_to_pixel(
@@ -341,7 +346,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
                     {
                         let range = rect.max.dim_point - rect.min.dim_point;
                         let min = (style.separator.extra / range).min(1.0);
-                        let max = 1.0 - min;
+                        let max: f32 = 1.0 - min;
                         let (min, max) = (min.min(max), max.max(min));
                         *fraction = (*fraction + delta / range).clamp(min, max);
                     }
@@ -495,11 +500,10 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
         for tab_index in 0..tabs_len {
             let id = self.id.with((node_index, "node")).with((tab_index, "tab"));
             let tab_index = TabIndex(tab_index);
-            let is_being_dragged =
-                tabs_ui.memory(|mem| mem.is_being_dragged(id)) && self.draggable_tabs;
+            let is_being_dragged = tabs_ui.memory().is_being_dragged(id) && self.draggable_tabs;
 
             if is_being_dragged {
-                tabs_ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
+                tabs_ui.output().cursor_icon = CursorIcon::Grabbing;
             }
 
             let (is_active, label, tab_style) = {
@@ -603,7 +607,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
                     state.drag_start = response.hover_pos();
                 }
 
-                if let Some(pos) = tabs_ui.input(|i| i.pointer.hover_pos()) {
+                if let Some(pos) = tabs_ui.input().pointer.hover_pos() {
                     // Use response.rect.contains instead of
                     // response.hovered as the dragged tab covers
                     // the underlying tab
@@ -711,7 +715,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
 
         if response.clicked() {
             if self.show_add_popup {
-                ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                ui.memory().toggle_popup(popup_id);
             }
             tab_viewer.on_add(node_index);
         }
@@ -755,7 +759,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
 
         let (rect, mut response) =
             ui.allocate_exact_size(vec2(tab_width, ui.available_height()), Sense::hover());
-        if !ui.memory(|mem| mem.is_anything_being_dragged()) && self.draggable_tabs {
+        if !ui.memory().is_anything_being_dragged() && self.draggable_tabs {
             response = response.on_hover_cursor(CursorIcon::Grab);
         }
 
@@ -800,7 +804,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
         ui.painter().add(TextShape {
             pos: text_pos,
             galley: galley.galley,
-            underline: Stroke::NONE,
+            underline: Stroke::none(),
             override_text_color,
             angle: 0.0,
         });
@@ -900,10 +904,11 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
 
                 *scroll -= scroll_bar_handle_response.drag_delta().x * points_to_scroll_coefficient;
 
-                if let Some(pos) = ui.input(|i| i.pointer.hover_pos()) {
+                if let Some(pos) = ui.input().pointer.hover_pos() {
                     if scroll_bar_rect.contains(pos) {
-                        *scroll += ui.input(|i| i.scroll_delta.y + i.scroll_delta.x)
-                            * points_to_scroll_coefficient;
+                        let i = ui.input();
+                        *scroll +=
+                            i.scroll_delta.y + i.scroll_delta.x * points_to_scroll_coefficient;
                     }
                 }
 
@@ -923,7 +928,8 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
 
             // Handle user input
             if tabbar_response.hovered() {
-                *scroll += ui.input(|i| i.scroll_delta.y + i.scroll_delta.x);
+                let i = ui.input();
+                *scroll += i.scroll_delta.y + i.scroll_delta.x;
             }
         }
 
@@ -955,8 +961,8 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
         if let Some(tab) = tabs.get_mut(active.0) {
             *viewport = body_rect;
 
-            if ui.input(|i| i.pointer.any_click()) {
-                if let Some(pos) = ui.input(|i| i.pointer.hover_pos()) {
+            if ui.input().pointer.any_click() {
+                if let Some(pos) = ui.input().pointer.hover_pos() {
                     if body_rect.contains(pos) {
                         self.new_focused = Some(node_index);
                     }
@@ -1007,7 +1013,7 @@ impl<'tree, Tab> DockArea<'tree, Tab> {
             }
         }
 
-        if let Some(pointer) = ui.input(|i| i.pointer.hover_pos()) {
+        if let Some(pointer) = ui.input().pointer.hover_pos() {
             // Use rect.contains instead of
             // response.hovered as the dragged tab covers
             // the underlying responses
